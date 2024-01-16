@@ -8,6 +8,12 @@
 #define TAG "XtremeAssets"
 
 #define ICONS_FMT XTREME_ASSETS_PATH "/%s/Icons/%s"
+#define FONTS_FMT XTREME_ASSETS_PATH "/%s/Fonts/%s.u8f"
+
+XtremeAssets xtreme_assets = {
+    .is_nsfw = false,
+    .fonts = {NULL},
+};
 
 void load_icon_animated(const Icon* replace, const char* name, FuriString* path, File* file) {
     const char* pack = xtreme_settings.asset_pack;
@@ -101,9 +107,32 @@ void free_icon(const Icon* icon) {
     free(frames);
 }
 
+void load_font(FontSwap font, const char* name, FuriString* path, File* file) {
+    furi_string_printf(path, FONTS_FMT, xtreme_settings.asset_pack, name);
+    if(storage_file_open(file, furi_string_get_cstr(path), FSAM_READ, FSOM_OPEN_EXISTING)) {
+        uint64_t size = storage_file_size(file);
+        uint8_t* swap = malloc(size);
+
+        if(storage_file_read(file, swap, size) == size) {
+            xtreme_assets.fonts[font] = swap;
+        } else {
+            free(swap);
+        }
+    }
+    storage_file_close(file);
+}
+
+static const char* font_names[] = {
+    [FontSwapPrimary] = "Primary",
+    [FontSwapSecondary] = "Secondary",
+    [FontSwapKeyboard] = "Keyboard",
+    [FontSwapBigNumbers] = "BigNumbers",
+    [FontSwapBatteryPercent] = "BatteryPercent",
+};
+
 void XTREME_ASSETS_LOAD() {
     const char* pack = xtreme_settings.asset_pack;
-    xtreme_settings.is_nsfw = !strncmp(pack, "NSFW", strlen("NSFW"));
+    xtreme_assets.is_nsfw = !strncmp(pack, "NSFW", strlen("NSFW"));
     if(pack[0] == '\0') return;
 
     Storage* storage = furi_record_open(RECORD_STORAGE);
@@ -124,6 +153,10 @@ void XTREME_ASSETS_LOAD() {
             }
         }
 
+        for(FontSwap font = 0; font < FontSwapCount; font++) {
+            load_font(font, font_names[font], p, f);
+        }
+
         storage_file_free(f);
     }
     furi_string_free(p);
@@ -134,6 +167,13 @@ void XTREME_ASSETS_FREE() {
     for(size_t i = 0; i < ICON_PATHS_COUNT; i++) {
         if(ICON_PATHS[i].icon->original != NULL) {
             free_icon(ICON_PATHS[i].icon);
+        }
+    }
+
+    for(FontSwap font = 0; font < FontSwapCount; font++) {
+        if(xtreme_assets.fonts[font] != NULL) {
+            free(xtreme_assets.fonts[font]);
+            xtreme_assets.fonts[font] = NULL;
         }
     }
 }

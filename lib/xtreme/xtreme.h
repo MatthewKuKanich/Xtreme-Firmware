@@ -51,8 +51,6 @@ typedef enum {
 } UARTChannel;
 
 typedef struct {
-    bool is_nsfw; // TODO: replace with packs text support
-
     char asset_pack[XTREME_ASSETS_PACK_NAME_LEN];
     uint32_t anim_speed;
     int32_t cycle_anims;
@@ -91,12 +89,27 @@ typedef struct {
     UARTChannel uart_general_channel;
 } XtremeSettings;
 
+typedef enum {
+    FontSwapPrimary,
+    FontSwapSecondary,
+    FontSwapKeyboard,
+    FontSwapBigNumbers,
+    FontSwapBatteryPercent,
+    FontSwapCount,
+} FontSwap;
+
+typedef struct {
+    bool is_nsfw; // TODO: replace with packs text support
+    uint8_t* fonts[FontSwapCount];
+} XtremeAssets;
+
 void XTREME_SETTINGS_LOAD();
 void XTREME_SETTINGS_SAVE();
 extern XtremeSettings xtreme_settings;
 
 void XTREME_ASSETS_LOAD();
 void XTREME_ASSETS_FREE();
+extern XtremeAssets xtreme_assets;
 
 #ifdef __cplusplus
 }
